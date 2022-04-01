@@ -103,6 +103,10 @@ JitOptions* JitOptions::CreateFromRuntimeArguments(const RuntimeArgumentMap& opt
       options.GetOrDefault(RuntimeArgumentMap::JITPoolThreadPthreadPriority);
   jit_options->zygote_thread_pool_pthread_priority_ =
       options.GetOrDefault(RuntimeArgumentMap::JITZygotePoolThreadPthreadPriority);
+  jit_options->artemis_jit_trace_enabled_ =
+      options.Exists(RuntimeArgumentMap::ArtemisJITTraceFilePath);
+  jit_options->artemis_jit_trace_path_ =
+      options.GetOrDefault(RuntimeArgumentMap::ArtemisJITTraceFilePath);
 
   // Set default optimize threshold to aid with checking defaults.
   jit_options->optimize_threshold_ =
@@ -185,7 +189,8 @@ Jit::Jit(JitCodeCache* code_cache, JitOptions* options)
       lock_("JIT memory use lock"),
       zygote_mapping_methods_(),
       fd_methods_(-1),
-      fd_methods_size_(0) {}
+      fd_methods_size_(0),
+      artemis_lock_("Jit::artemis_lock_") {}
 
 Jit* Jit::Create(JitCodeCache* code_cache, JitOptions* options) {
   if (jit_load_ == nullptr) {
@@ -328,6 +333,8 @@ bool Jit::CompileMethod(ArtMethod* method,
     VLOG(jit) << "Failed to compile method "
               << ArtMethod::PrettyMethod(method_to_compile)
               << " kind=" << compilation_kind;
+  } else {
+    ArtemisTraceMethodJitCompiled(method_to_compile);
   }
   if (kIsDebugBuild) {
     if (self->IsExceptionPending()) {
@@ -410,6 +417,21 @@ Jit::~Jit() {
   if (jit_library_handle_ != nullptr) {
     dlclose(jit_library_handle_);
     jit_library_handle_ = nullptr;
+  }
+  // Save artemis traces to trace file
+  if (options_->IsArtemisJitTraceEnabled()) {
+    MutexLock mu(Thread::Current(), artemis_lock_);
+    std::ofstream fout(options_->GetArtemisJitTracePath());
+    for (auto it = artemis_jit_compiled_methods_.begin(); it != artemis_jit_compiled_methods_.end(); it ++) {
+      fout << "JIT: " << *it << std::endl;
+    }
+    for (auto it = artemis_deoptimized_methods_.begin(); it != artemis_deoptimized_methods_.end(); it ++) {
+      fout << "DEOPT: " << *it << std::endl;
+    }
+    fout << "----" << std::endl;
+    // for (auto it = artemis_traced_methods_.begin(); it != artemis_traced_methods_.end(); it ++) {
+    //   fout << *it << std::endl;
+    // }
   }
 }
 
@@ -1785,6 +1807,24 @@ void Jit::MaybeEnqueueCompilation(ArtMethod* method, Thread* self) {
         new JitCompileTask(method,
                            JitCompileTask::TaskKind::kCompile,
                            CompilationKind::kOptimized));
+  }
+}
+
+void Jit::ArtemisTraceMethodJitCompiled(ArtMethod* method) {
+  if (options_->IsArtemisJitTraceEnabled()) {
+    MutexLock mu(Thread::Current(), artemis_lock_);
+    std::string sig = ArtMethod::PrettyMethod(method);
+    // artemis_traced_methods_.push_back("JIT: " + sig);
+    artemis_jit_compiled_methods_.insert(sig);
+  }
+}
+
+void Jit::ArtemisTraceMethodDeoptimized(ArtMethod* method) {
+  if (options_->IsArtemisJitTraceEnabled()) {
+    MutexLock mu(Thread::Current(), artemis_lock_);
+    std::string sig = ArtMethod::PrettyMethod(method);
+    // artemis_traced_methods_.push_back("DEOPT: " + sig);
+    artemis_deoptimized_methods_.insert(sig);
   }
 }
 
