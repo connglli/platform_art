@@ -123,6 +123,7 @@
 #include "native/dalvik_system_VMRuntime.h"
 #include "native/dalvik_system_VMStack.h"
 #include "native/dalvik_system_ZygoteHooks.h"
+#include "native/dalvik_artemis_Artemis.h"
 #include "native/java_lang_Class.h"
 #include "native/java_lang_Object.h"
 #include "native/java_lang_String.h"
@@ -2223,6 +2224,7 @@ void Runtime::RegisterRuntimeNativeMethods(JNIEnv* env) {
   register_dalvik_system_VMRuntime(env);
   register_dalvik_system_VMStack(env);
   register_dalvik_system_ZygoteHooks(env);
+  register_dalvik_artemis_Artemis(env);
   register_java_lang_Class(env);
   register_java_lang_Object(env);
   register_java_lang_invoke_MethodHandle(env);

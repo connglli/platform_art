@@ -1315,7 +1315,7 @@ int32_t main(int32_t argc, char** argv) {
 
   // Parse options.
   while (1) {
-    int32_t option = getopt(argc, argv, "s:d:l:i:n:vh");
+    int32_t option = getopt(argc, argv, "s:d:l:i:n:t:vh");
     if (option < 0) {
       break;  // done
     }

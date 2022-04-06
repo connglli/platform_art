@@ -17,6 +17,8 @@
 #ifndef ART_RUNTIME_JIT_JIT_H_
 #define ART_RUNTIME_JIT_JIT_H_
 
+#include <fstream>
+#include <list>
 #include <android-base/unique_fd.h>
 
 #include "base/histogram-inl.h"
@@ -122,6 +124,14 @@ class JitOptions {
     return use_profiled_jit_compilation_;
   }
 
+  bool IsArtemisJitTraceEnabled() const {
+    return artemis_jit_trace_enabled_;
+  }
+
+  const std::string& GetArtemisJitTracePath() const {
+    return artemis_jit_trace_path_;
+  }
+
   void SetUseJitCompilation(bool b) {
     use_jit_compilation_ = b;
   }
@@ -164,6 +174,8 @@ class JitOptions {
   bool dump_info_on_shutdown_;
   int thread_pool_pthread_priority_;
   int zygote_thread_pool_pthread_priority_;
+  bool artemis_jit_trace_enabled_;
+  std::string artemis_jit_trace_path_;
   ProfileSaverOptions profile_saver_options_;
 
   JitOptions()
@@ -178,7 +190,9 @@ class JitOptions {
         invoke_transition_weight_(0),
         dump_info_on_shutdown_(false),
         thread_pool_pthread_priority_(kJitPoolThreadPthreadDefaultPriority),
-        zygote_thread_pool_pthread_priority_(kJitZygotePoolThreadPthreadDefaultPriority) {}
+        zygote_thread_pool_pthread_priority_(kJitZygotePoolThreadPthreadDefaultPriority),
+        artemis_jit_trace_enabled_(false),
+        artemis_jit_trace_path_("") {}
 
   DISALLOW_COPY_AND_ASSIGN(JitOptions);
 };
@@ -441,6 +455,11 @@ class Jit {
   void MaybeEnqueueCompilation(ArtMethod* method, Thread* self)
       REQUIRES_SHARED(Locks::mutator_lock_);
 
+  // Trace jitted and deoptimized methods via Artemis
+  void ArtemisTraceMethodJitCompiled(ArtMethod* method) REQUIRES_SHARED(Locks::mutator_lock_);
+
+  void ArtemisTraceMethodDeoptimized(ArtMethod* method) REQUIRES_SHARED(Locks::mutator_lock_);
+
  private:
   Jit(JitCodeCache* code_cache, JitOptions* options);
 
@@ -506,6 +525,12 @@ class Jit {
   // Map of hotness counters for methods which we want to share the memory
   // between the zygote and apps.
   std::map<ArtMethod*, uint16_t> shared_method_counters_;
+
+  // Artemis trace
+  Mutex artemis_lock_;
+  // std::list<std::string> artemis_traced_methods_ GUARDED_BY(artemis_lock_);
+  std::set<std::string> artemis_jit_compiled_methods_ GUARDED_BY(artemis_lock_);
+  std::set<std::string> artemis_deoptimized_methods_ GUARDED_BY(artemis_lock_);
 
   DISALLOW_COPY_AND_ASSIGN(Jit);
 };

@@ -417,6 +417,7 @@ class DeoptimizeStackVisitor final : public StackVisitor {
         single_frame_deopt_quick_method_header_ = GetCurrentOatQuickMethodHeader();
       }
       callee_method_ = method;
+      Runtime::Current()->GetJit()->ArtemisTraceMethodDeoptimized(method);
       return true;
     }
   }
