@@ -31,6 +31,7 @@ enum class DeoptimizationKind {
   kCHA,
   kDebugging,
   kFullFrame,
+  kArtemis,
   kLast = kFullFrame
 };
 
@@ -45,6 +46,7 @@ inline const char* GetDeoptimizationKindName(DeoptimizationKind kind) {
     case DeoptimizationKind::kCHA: return "class hierarchy analysis";
     case DeoptimizationKind::kDebugging: return "Deopt requested for debug support";
     case DeoptimizationKind::kFullFrame: return "full frame";
+    case DeoptimizationKind::kArtemis: return "Deopt requested for artemis support";
   }
   LOG(FATAL) << "Unexpected kind " << static_cast<size_t>(kind);
   UNREACHABLE();

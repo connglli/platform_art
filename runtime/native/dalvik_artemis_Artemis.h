@@ -2,7 +2,6 @@
 #define ART_RUNTIME_NATIVE_DALVIK_SYSTEM_ARTEMIS_H_
 
 #include <jni.h>
-#include <unistd.h>
 
 namespace art {
 

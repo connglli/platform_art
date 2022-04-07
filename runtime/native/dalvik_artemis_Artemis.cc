@@ -1,35 +1,65 @@
-/*
- * Copyright (C) 2020 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "dalvik_artemis_Artemis.h"
 
-#include <iostream>
-
+#include "artemis.h"
+#include "art_method.h"
 #include "nativehelper/jni_macros.h"
 #include "native_util.h"
+#include "scoped_thread_state_change-inl.h"
+#include "thread-inl.h"
 
 namespace art {
 
-static jboolean Artemis_helloJniArtemis(JNIEnv*, jclass) {
-  std::cout << "Hello JNI Artemis" << std::endl;
-  return true;
+// public static native boolean isJitEnabled()
+
+static jboolean Artemis_isJitEnabled(JNIEnv*, jclass) {
+  return artemis::IsJitEnabled();
+}
+
+// public static native boolean isJitCompiled()
+
+static jboolean Artemis_isJitCompiled(JNIEnv* env, jclass) {
+  return artemis::IsMethodJitCompiled(artemis::GetCurrentMethod(ThreadForEnv(env)));
+}
+
+// public static native boolean isMethodJitCompiled(Method method)
+
+static jboolean Artemis_isMethodJitCompiled(JNIEnv* env, jclass, jobject java_method) {
+  ArtMethod* method;
+  {
+    ScopedObjectAccess soa(env);
+    method = ArtMethod::FromReflectedMethod(soa, java_method);
+  }
+  return artemis::IsMethodJitCompiled(method);
+}
+
+// public static native boolean ensureMethodJitCompiled(Method method);
+
+static jboolean Artemis_ensureMethodJitCompiled(JNIEnv* env, jclass, jobject java_method) {
+  ArtMethod* method;
+  {
+    ScopedObjectAccess soa(env);
+    method = ArtMethod::FromReflectedMethod(soa, java_method);
+  }
+  return artemis::ForceJitCompileMethod(ThreadForEnv(env), method);
+}
+
+// public static native ensureMethodDeoptimized(Method method);
+
+static jboolean Artemis_ensureMethodDeoptimized(JNIEnv* env, jclass, jobject java_method) {
+  ArtMethod* method;
+  {
+    ScopedObjectAccess soa(env);
+    method = ArtMethod::FromReflectedMethod(soa, java_method);
+  }
+  return artemis::ForceDeoptimizeMethod(ThreadForEnv(env), method);
 }
 
 static JNINativeMethod gMethods[] = {
-  NATIVE_METHOD(Artemis, helloJniArtemis, "()Z"),
+  NATIVE_METHOD(Artemis, isJitEnabled, "()Z"),
+  NATIVE_METHOD(Artemis, isJitCompiled, "()Z"),
+  NATIVE_METHOD(Artemis, isMethodJitCompiled, "(Ljava/lang/reflect/Method;)Z"),
+  NATIVE_METHOD(Artemis, ensureMethodJitCompiled, "(Ljava/lang/reflect/Method;)Z"),
+  NATIVE_METHOD(Artemis, ensureMethodDeoptimized, "(Ljava/lang/reflect/Method;)Z"),
 };
 
 void register_dalvik_artemis_Artemis(JNIEnv* env) {
