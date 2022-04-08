@@ -39,6 +39,7 @@
 #include "oat_quick_method_header.h"
 #include "stack.h"
 #include "stack_map.h"
+#include "well_known_classes.h"
 
 namespace art {
 
@@ -313,7 +314,8 @@ class DeoptimizeStackVisitor final : public StackVisitor {
         single_frame_done_(false),
         single_frame_deopt_method_(nullptr),
         single_frame_deopt_quick_method_header_(nullptr),
-        callee_method_(nullptr) {
+        callee_method_(nullptr),
+        artemis_(false) {
   }
 
   ArtMethod* GetSingleFrameDeoptMethod() const {
@@ -322,6 +324,10 @@ class DeoptimizeStackVisitor final : public StackVisitor {
 
   const OatQuickMethodHeader* GetSingleFrameDeoptQuickMethodHeader() const {
     return single_frame_deopt_quick_method_header_;
+  }
+
+  void EnableArtemis(bool enable) {
+    artemis_ = enable;
   }
 
   void FinishStackWalk() REQUIRES_SHARED(Locks::mutator_lock_) {
@@ -358,6 +364,12 @@ class DeoptimizeStackVisitor final : public StackVisitor {
     } else if (method->IsRuntimeMethod()) {
       // Ignore callee save method.
       DCHECK(method->IsCalleeSaveMethod());
+      return true;
+    } else if (artemis_ &&
+               method->IsNative() &&
+               method == jni::DecodeArtMethod(WellKnownClasses::dalvik_artemis_Artemis_ensureDeoptimized)) {
+      // Ignore artemis method
+      callee_method_ = method;
       return true;
     } else if (method->IsNative()) {
       // If we return from JNI with a pending exception and want to deoptimize, we need to skip
@@ -550,6 +562,7 @@ class DeoptimizeStackVisitor final : public StackVisitor {
   ArtMethod* single_frame_deopt_method_;
   const OatQuickMethodHeader* single_frame_deopt_quick_method_header_;
   ArtMethod* callee_method_;
+  bool artemis_;
 
   DISALLOW_COPY_AND_ASSIGN(DeoptimizeStackVisitor);
 };
@@ -584,6 +597,9 @@ void QuickExceptionHandler::DeoptimizeSingleFrame(DeoptimizationKind kind) {
   DCHECK(is_deoptimization_);
 
   DeoptimizeStackVisitor visitor(self_, context_, this, true);
+  if (kind == DeoptimizationKind::kArtemis) {
+    visitor.EnableArtemis(true);
+  }
   visitor.WalkStack(true);
 
   // Compiled code made an explicit deoptimization.

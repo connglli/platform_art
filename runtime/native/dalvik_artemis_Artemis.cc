@@ -15,10 +15,18 @@ static jboolean Artemis_isJitEnabled(JNIEnv*, jclass) {
   return artemis::IsJitEnabled();
 }
 
+// public static native boolean isBeingInterpreted()
+
+static jboolean Artemis_isBeingInterpreted(JNIEnv* env, jclass) {
+  // Depth is 1 because the method to ask is our (we are the native JNI method) caller
+  return artemis::IsBeingInterpretedAt(ThreadForEnv(env), /*depth=*/ 1);
+}
+
 // public static native boolean isJitCompiled()
 
 static jboolean Artemis_isJitCompiled(JNIEnv* env, jclass) {
-  return artemis::IsMethodJitCompiled(artemis::GetCurrentMethod(ThreadForEnv(env)));
+  // Depth is 1 because the method to ask is our (we are the native JNI method) caller
+  return artemis::IsMethodJitCompiled(artemis::GetCurrentMethodAt(ThreadForEnv(env), /*depth=*/ 1));
 }
 
 // public static native boolean isMethodJitCompiled(Method method)
@@ -43,6 +51,12 @@ static jboolean Artemis_ensureMethodJitCompiled(JNIEnv* env, jclass, jobject jav
   return artemis::ForceJitCompileMethod(ThreadForEnv(env), method);
 }
 
+// public static native boolean ensureJitCompiled();
+
+static jboolean Artemis_ensureJitCompiled(JNIEnv* env, jclass) {
+  return artemis::EnsureJitCompiled(ThreadForEnv(env));
+}
+
 // public static native ensureMethodDeoptimized(Method method);
 
 static jboolean Artemis_ensureMethodDeoptimized(JNIEnv* env, jclass, jobject java_method) {
@@ -54,11 +68,20 @@ static jboolean Artemis_ensureMethodDeoptimized(JNIEnv* env, jclass, jobject jav
   return artemis::ForceDeoptimizeMethod(ThreadForEnv(env), method);
 }
 
+// public static native boolean ensureDeoptimized();
+
+static void Artemis_ensureDeoptimized(JNIEnv* env, jclass) {
+  artemis::EnsureDeoptimized(ThreadForEnv(env));
+}
+
 static JNINativeMethod gMethods[] = {
   NATIVE_METHOD(Artemis, isJitEnabled, "()Z"),
+  NATIVE_METHOD(Artemis, isBeingInterpreted, "()Z"),
   NATIVE_METHOD(Artemis, isJitCompiled, "()Z"),
   NATIVE_METHOD(Artemis, isMethodJitCompiled, "(Ljava/lang/reflect/Method;)Z"),
+  NATIVE_METHOD(Artemis, ensureJitCompiled, "()Z"),
   NATIVE_METHOD(Artemis, ensureMethodJitCompiled, "(Ljava/lang/reflect/Method;)Z"),
+  NATIVE_METHOD(Artemis, ensureDeoptimized, "()V"),
   NATIVE_METHOD(Artemis, ensureMethodDeoptimized, "(Ljava/lang/reflect/Method;)Z"),
 };
 

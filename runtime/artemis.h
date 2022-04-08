@@ -8,9 +8,14 @@ namespace art {
 namespace artemis {
 
 /**
- * Get the current method on self's stack top
+ * Get the current method at self stack's depth
  */
-ArtMethod* GetCurrentMethod(Thread* self);
+ArtMethod* GetCurrentMethodAt(Thread* self, int depth);
+
+/**
+ * Return whether the method at self's stack depth is being interpreted.
+ */
+bool IsBeingInterpretedAt(Thread* self, int depth);
 
 /**
  * Return whether JIT compilation is enabled
@@ -30,11 +35,23 @@ bool ForceJitCompileMethod(Thread* self,
                            ArtMethod* method) REQUIRES(!Locks::mutator_lock_);
 
 /**
+ * Force Jit to compile current method. Return whehter
+ * the current method is successfully JIT compiled.
+ */
+bool EnsureJitCompiled(Thread* self) REQUIRES(!Locks::mutator_lock_);
+
+/**
  * Force to deoptimize the given method. Return whehter
  * the method is successfully deoptimized.
  */
 bool ForceDeoptimizeMethod(Thread* self,
                            ArtMethod* method) REQUIRES(!Locks::mutator_lock_);
+
+/**
+ * Force to deoptimize current method. Return whehter
+ * the current method is successfully deoptimized.
+ */
+void EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_);
 
 } // namespace artemis
 } // namespace art

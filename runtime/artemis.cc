@@ -29,6 +29,7 @@
 #include "jit/jit_code_cache.h"
 #include "mirror/class.h"
 #include "nth_caller_visitor.h"
+#include "oat_quick_method_header.h"
 #include "obj_ptr-inl.h"
 #include "runtime.h"
 #include "scoped_thread_state_change-inl.h"
@@ -39,14 +40,40 @@
 namespace art {
 namespace artemis {
 
-ArtMethod* GetCurrentMethod(Thread* self) {
+ArtMethod* GetCurrentMethodAt(Thread* self, int depth) {
   ScopedObjectAccess soa(self);
-  // TODO(congli): Why 1 instead of 0? What is the 0th method?
-  // Also what is the difference from Thread::GetCurrentThread()?
-  NthCallerVisitor caller(self, 1, /*include_runtime_and_upcalls=*/ false);
+  NthCallerVisitor caller(self, depth, /*include_runtime_and_upcalls=*/ false);
   caller.WalkStack();
   CHECK_NE(caller.caller, nullptr);
   return caller.caller;
+}
+
+bool IsBeingInterpretedAt(Thread* self, int depth) {
+  ScopedObjectAccess soa(self);
+  NthCallerVisitor caller(self, depth, /*include_runtime_and_upcalls=*/ false);
+  caller.WalkStack();
+  CHECK_NE(caller.caller, nullptr);
+  bool is_shadow_frame = (caller.GetCurrentShadowFrame() != nullptr);
+  bool is_nterp_frame = (caller.GetCurrentQuickFrame() != nullptr) &&
+      (caller.GetCurrentOatQuickMethodHeader()->IsNterpMethodHeader());
+  return is_shadow_frame || is_nterp_frame;
+}
+
+bool IsMethodBeingManaged(Thread* self, ArtMethod* goal) {
+  ScopedObjectAccess soa(self);
+  bool found_goal = false;
+  StackVisitor::WalkStack(
+    [&](const StackVisitor* stack_visitor) REQUIRES_SHARED(Locks::mutator_lock_) {
+      if (goal == stack_visitor->GetMethod()) {
+        found_goal = true;
+        return false;
+      }
+      return true;
+    },
+    self,
+    /*context=*/ nullptr,
+    StackVisitor::StackWalkKind::kIncludeInlinedFrames);
+  return found_goal;
 }
 
 bool IsJitEnabled() {
@@ -62,23 +89,6 @@ bool IsMethodJitCompiled(ArtMethod* method) {
   }
   jit::JitCodeCache* code_cache = jit->GetCodeCache();
   return code_cache->ContainsPc(method->GetEntryPointFromQuickCompiledCode());
-}
-
-bool IsMethodBeingManaged(Thread* self, ArtMethod* goal) {
-  ReaderMutexLock mu(Thread::Current(), *Locks::mutator_lock_);
-  bool found_goal = false;
-  StackVisitor::WalkStack(
-    [&](const StackVisitor* stack_visitor) REQUIRES_SHARED(Locks::mutator_lock_) {
-      if (goal == stack_visitor->GetMethod()) {
-        found_goal = true;
-        return false;
-      }
-      return true;
-    },
-    self,
-    /*context=*/ nullptr,
-    StackVisitor::StackWalkKind::kIncludeInlinedFrames);
-  return found_goal;
 }
 
 bool EnsureClassInitialized(Thread* self, ArtMethod* method) {
@@ -132,7 +142,6 @@ bool ForceJitCompileMethod(Thread* self,
   // The method is being managed on the stack which requires
   // an OSR compilation. Do not support OSR in this method.
   // Use art::artemis::EnsureJitCompiled() instead.
-  // We never support JIT compile one of our caller.
   if (IsMethodBeingManaged(self, method)) {
     return false;
   }
@@ -156,9 +165,45 @@ bool ForceJitCompileMethod(Thread* self,
   return true;
 }
 
-bool EnsureJitCompiled(Thread*) REQUIRES(!Locks::mutator_lock_) {
-  // TODO(congli): Implement OSR compilation
-  return false;
+bool EnsureJitCompiled(Thread* self) REQUIRES(!Locks::mutator_lock_) {
+  // Note, use 1 instead of 0 because the stack top is the
+  // native JNI method and we are caller of that method
+  ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ 1);
+
+  // Do not support native methods
+  if (!IsJitEnabled() || method->IsNative()) {
+    return false;
+  }
+
+  // TODO(congli): See tests/common/runtime_state.cc:ForceJitCompiled()
+  if (Runtime::Current()->GetInstrumentation()->EntryExitStubsInstalled() &&
+      (method->IsNative() || !Runtime::Current()->IsJavaDebuggable())) {
+    return false;
+  }
+
+  // No need to JIT compile already jitted methods
+  if (IsMethodJitCompiled(method)) {
+    return true;
+  }
+
+  // Keep OSR compiling the method until success
+  jit::Jit* jit = Runtime::Current()->GetJit();
+  jit::JitCodeCache* code_cache = jit->GetCodeCache();
+  code_cache->SetGarbageCollectCode(false);
+  do {
+    usleep(500);
+    ScopedObjectAccess soa(self);
+    // The branch will automatically invoke MaybeDoOnStackReplacement() to OSR.
+    // BUG(congli): It seems MaybeDoOnStackReplacement() is never executed but
+    // IsBeingInterpretedAt(self, 1) returns false. Looks like somewhere else
+    // invokes PrepareForOsr()... But I did not find anywhere except nterp.
+    jit->CompileMethod(method, self, CompilationKind::kOsr, /*prejit=*/ false);
+    if (code_cache->LookupOsrMethodHeader(method) != nullptr) {
+      break;
+    }
+  } while (true);
+
+  return true;
 }
 
 bool ForceDeoptimizeMethod(Thread* self,
@@ -195,7 +240,7 @@ bool ForceDeoptimizeMethod(Thread* self,
   CHECK(code_cache->ContainsPc(method->GetEntryPointFromQuickCompiledCode()));
 
   {
-    ReaderMutexLock mu(Thread::Current(), *Locks::mutator_lock_);
+    ScopedObjectAccess soa(self);
 
     Runtime::Current()->IncrementDeoptimizationCount(DeoptimizationKind::kArtemis);
     jit->ArtemisTraceMethodDeoptimized(method);
@@ -222,12 +267,37 @@ bool ForceDeoptimizeMethod(Thread* self,
   return true;
 }
 
-bool EnsureDeoptimized(Thread*) REQUIRES(!Locks::mutator_lock_) {
-  // The method is being managed on the stack, we need to deoptimize the method
-  // along the stack (to transform the quick frame to a shadow frame) and maybe
-  // long-jumps to the dex pc (if it is the method being invoked).
-  // TODO(congli): Deopt like artDepotimize() to utilize QuickExceptionHandler()
-  return false;
+extern "C" NO_RETURN void artDeoptimizeFromCompiledCode(DeoptimizationKind kind, Thread* self);
+
+void EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_) {
+  // Note, use 1 instead of 0 because the stack top is the
+  // native JNI method and we are caller of that method
+  ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ 1);
+
+  // Do not support native methods
+  if (method->IsNative()) {
+    return;
+  }
+
+  // Not JIT compiled, no need deoptimizing
+  if (!IsMethodJitCompiled(method)) {
+    return;
+  }
+
+  {
+    // The following code transforms quick frame to shadow frame and
+    // long-jumps to artQuickToInterpreterBridge, which resumes execution
+    // by knowing that it comes from a deoptimization, and thereby it
+    // enters HandleDeoptimization() and EnterInterpreterFromDeoptimization().
+    // EnterInterpreterFromDeoptimization() will continue the execution from
+    // the transformed shadow frame.
+    // BUG(congli): HandleOptimizingDeoptimization() cannot fetch the correct
+    // local variables and parameter values.
+    ScopedObjectAccess soa(self);
+    artDeoptimizeFromCompiledCode(DeoptimizationKind::kArtemis, self);
+    LOG(FATAL) << "UNREACHABLE";  // Expected to take long jump.
+    UNREACHABLE();
+  }
 }
 
 } // namespace artemis

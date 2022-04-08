@@ -41,6 +41,7 @@
 
 namespace art {
 
+jclass WellKnownClasses::dalvik_artemis_Artemis;
 jclass WellKnownClasses::dalvik_annotation_optimization_CriticalNative;
 jclass WellKnownClasses::dalvik_annotation_optimization_FastNative;
 jclass WellKnownClasses::dalvik_annotation_optimization_NeverCompile;
@@ -88,6 +89,7 @@ jclass WellKnownClasses::libcore_util_EmptyArray;
 jclass WellKnownClasses::org_apache_harmony_dalvik_ddmc_Chunk;
 jclass WellKnownClasses::org_apache_harmony_dalvik_ddmc_DdmServer;
 
+jmethodID WellKnownClasses::dalvik_artemis_Artemis_ensureDeoptimized;
 jmethodID WellKnownClasses::dalvik_system_BaseDexClassLoader_getLdLibraryPath;
 jmethodID WellKnownClasses::dalvik_system_VMRuntime_runFinalization;
 jmethodID WellKnownClasses::dalvik_system_VMRuntime_hiddenApiUsed;
@@ -340,6 +342,8 @@ void WellKnownClasses::Init(JNIEnv* env) {
   hiddenapi::ScopedHiddenApiEnforcementPolicySetting hiddenapi_exemption(
       hiddenapi::EnforcementPolicy::kDisabled);
 
+  dalvik_artemis_Artemis =
+      CacheClass(env, "dalvik/artemis/Artemis");
   dalvik_annotation_optimization_CriticalNative =
       CacheClass(env, "dalvik/annotation/optimization/CriticalNative");
   dalvik_annotation_optimization_FastNative = CacheClass(env, "dalvik/annotation/optimization/FastNative");
@@ -397,6 +401,7 @@ void WellKnownClasses::InitFieldsAndMethodsOnly(JNIEnv* env) {
   hiddenapi::ScopedHiddenApiEnforcementPolicySetting hiddenapi_exemption(
       hiddenapi::EnforcementPolicy::kDisabled);
 
+  dalvik_artemis_Artemis_ensureDeoptimized = CacheMethod(env, dalvik_artemis_Artemis, true, "ensureDeoptimized", "()V");
   dalvik_system_BaseDexClassLoader_getLdLibraryPath = CacheMethod(env, dalvik_system_BaseDexClassLoader, false, "getLdLibraryPath", "()Ljava/lang/String;");
   dalvik_system_VMRuntime_runFinalization = CacheMethod(env, dalvik_system_VMRuntime, true, "runFinalization", "(J)V");
   dalvik_system_VMRuntime_hiddenApiUsed = CacheMethod(env, dalvik_system_VMRuntime, true, "hiddenApiUsed", "(ILjava/lang/String;Ljava/lang/String;IZ)V");
@@ -548,6 +553,7 @@ void WellKnownClasses::HandleJniIdTypeChange(JNIEnv* env) {
 }
 
 void WellKnownClasses::Clear() {
+  dalvik_artemis_Artemis = nullptr;
   dalvik_annotation_optimization_CriticalNative = nullptr;
   dalvik_annotation_optimization_FastNative = nullptr;
   dalvik_annotation_optimization_NeverCompile = nullptr;
@@ -593,6 +599,7 @@ void WellKnownClasses::Clear() {
   org_apache_harmony_dalvik_ddmc_Chunk = nullptr;
   org_apache_harmony_dalvik_ddmc_DdmServer = nullptr;
 
+  dalvik_artemis_Artemis_ensureDeoptimized = nullptr;
   dalvik_system_BaseDexClassLoader_getLdLibraryPath = nullptr;
   dalvik_system_VMRuntime_runFinalization = nullptr;
   dalvik_system_VMRuntime_hiddenApiUsed = nullptr;

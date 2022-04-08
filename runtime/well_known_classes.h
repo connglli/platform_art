@@ -54,6 +54,7 @@ struct WellKnownClasses {
   static void InitFieldsAndMethodsOnly(JNIEnv* env);
 
  public:
+  static jclass dalvik_artemis_Artemis;
   static jclass dalvik_annotation_optimization_CriticalNative;
   static jclass dalvik_annotation_optimization_FastNative;
   static jclass dalvik_annotation_optimization_NeverCompile;
@@ -101,6 +102,7 @@ struct WellKnownClasses {
   static jclass org_apache_harmony_dalvik_ddmc_Chunk;
   static jclass org_apache_harmony_dalvik_ddmc_DdmServer;
 
+  static jmethodID dalvik_artemis_Artemis_ensureDeoptimized;
   static jmethodID dalvik_system_BaseDexClassLoader_getLdLibraryPath;
   static jmethodID dalvik_system_VMRuntime_runFinalization;
   static jmethodID dalvik_system_VMRuntime_hiddenApiUsed;
