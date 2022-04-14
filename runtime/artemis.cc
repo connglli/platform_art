@@ -165,6 +165,10 @@ bool ForceJitCompileMethod(Thread* self,
   return true;
 }
 
+bool IsArtemisEnsureJitCompiled(ArtMethod* method) {
+  return method == jni::DecodeArtMethod(WellKnownClasses::dalvik_artemis_Artemis_ensureJitCompiled);
+}
+
 bool EnsureJitCompiled(Thread* self) REQUIRES(!Locks::mutator_lock_) {
   // Note, use 1 instead of 0 because the stack top is the
   // native JNI method and we are caller of that method
@@ -267,21 +271,25 @@ bool ForceDeoptimizeMethod(Thread* self,
   return true;
 }
 
+bool IsArtemisEnsureDeoptimized(ArtMethod* method) {
+  return method == jni::DecodeArtMethod(WellKnownClasses::dalvik_artemis_Artemis_ensureDeoptimized);
+}
+
 extern "C" NO_RETURN void artDeoptimizeFromCompiledCode(DeoptimizationKind kind, Thread* self);
 
-void EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_) {
+bool EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_) {
   // Note, use 1 instead of 0 because the stack top is the
   // native JNI method and we are caller of that method
   ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ 1);
 
   // Do not support native methods
   if (method->IsNative()) {
-    return;
+    return false;
   }
 
   // Not JIT compiled, no need deoptimizing
   if (!IsMethodJitCompiled(method)) {
-    return;
+    return true;
   }
 
   {

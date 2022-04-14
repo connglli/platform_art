@@ -19,6 +19,7 @@
 
 #include "arch/context.h"
 #include "art_method-inl.h"
+#include "artemis.h"
 #include "base/enums.h"
 #include "base/globals.h"
 #include "base/logging.h"  // For VLOG_IS_ON.
@@ -367,8 +368,9 @@ class DeoptimizeStackVisitor final : public StackVisitor {
       return true;
     } else if (artemis_ &&
                method->IsNative() &&
-               method == jni::DecodeArtMethod(WellKnownClasses::dalvik_artemis_Artemis_ensureDeoptimized)) {
-      // Ignore artemis method
+               artemis::IsArtemisEnsureDeoptimized(method)) {
+      // Ignore artemis method.
+      CHECK_EQ(GetFrameDepth(), 0U);
       callee_method_ = method;
       return true;
     } else if (method->IsNative()) {

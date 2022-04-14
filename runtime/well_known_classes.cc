@@ -89,6 +89,7 @@ jclass WellKnownClasses::libcore_util_EmptyArray;
 jclass WellKnownClasses::org_apache_harmony_dalvik_ddmc_Chunk;
 jclass WellKnownClasses::org_apache_harmony_dalvik_ddmc_DdmServer;
 
+jmethodID WellKnownClasses::dalvik_artemis_Artemis_ensureJitCompiled;
 jmethodID WellKnownClasses::dalvik_artemis_Artemis_ensureDeoptimized;
 jmethodID WellKnownClasses::dalvik_system_BaseDexClassLoader_getLdLibraryPath;
 jmethodID WellKnownClasses::dalvik_system_VMRuntime_runFinalization;
@@ -401,7 +402,8 @@ void WellKnownClasses::InitFieldsAndMethodsOnly(JNIEnv* env) {
   hiddenapi::ScopedHiddenApiEnforcementPolicySetting hiddenapi_exemption(
       hiddenapi::EnforcementPolicy::kDisabled);
 
-  dalvik_artemis_Artemis_ensureDeoptimized = CacheMethod(env, dalvik_artemis_Artemis, true, "ensureDeoptimized", "()V");
+  dalvik_artemis_Artemis_ensureJitCompiled = CacheMethod(env, dalvik_artemis_Artemis, true, "ensureJitCompiled", "()Z");
+  dalvik_artemis_Artemis_ensureDeoptimized = CacheMethod(env, dalvik_artemis_Artemis, true, "ensureDeoptimized", "()Z");
   dalvik_system_BaseDexClassLoader_getLdLibraryPath = CacheMethod(env, dalvik_system_BaseDexClassLoader, false, "getLdLibraryPath", "()Ljava/lang/String;");
   dalvik_system_VMRuntime_runFinalization = CacheMethod(env, dalvik_system_VMRuntime, true, "runFinalization", "(J)V");
   dalvik_system_VMRuntime_hiddenApiUsed = CacheMethod(env, dalvik_system_VMRuntime, true, "hiddenApiUsed", "(ILjava/lang/String;Ljava/lang/String;IZ)V");
@@ -599,6 +601,7 @@ void WellKnownClasses::Clear() {
   org_apache_harmony_dalvik_ddmc_Chunk = nullptr;
   org_apache_harmony_dalvik_ddmc_DdmServer = nullptr;
 
+  dalvik_artemis_Artemis_ensureJitCompiled = nullptr;
   dalvik_artemis_Artemis_ensureDeoptimized = nullptr;
   dalvik_system_BaseDexClassLoader_getLdLibraryPath = nullptr;
   dalvik_system_VMRuntime_runFinalization = nullptr;

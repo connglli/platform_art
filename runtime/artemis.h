@@ -35,6 +35,11 @@ bool ForceJitCompileMethod(Thread* self,
                            ArtMethod* method) REQUIRES(!Locks::mutator_lock_);
 
 /**
+ * Return whether the given method is dalvik_artemis_Artemis_ensureJitCompiled.
+ */
+bool IsArtemisEnsureJitCompiled(ArtMethod* method);
+
+/**
  * Force Jit to compile current method. Return whehter
  * the current method is successfully JIT compiled.
  */
@@ -48,10 +53,15 @@ bool ForceDeoptimizeMethod(Thread* self,
                            ArtMethod* method) REQUIRES(!Locks::mutator_lock_);
 
 /**
+ * Return whether the given method is dalvik_artemis_Artemis_ensureDeoptimized.
+ */
+bool IsArtemisEnsureDeoptimized(ArtMethod* method);
+
+/**
  * Force to deoptimize current method. Return whehter
  * the current method is successfully deoptimized.
  */
-void EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_);
+bool EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_);
 
 } // namespace artemis
 } // namespace art

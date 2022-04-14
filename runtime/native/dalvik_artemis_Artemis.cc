@@ -57,7 +57,7 @@ static jboolean Artemis_ensureJitCompiled(JNIEnv* env, jclass) {
   return artemis::EnsureJitCompiled(ThreadForEnv(env));
 }
 
-// public static native ensureMethodDeoptimized(Method method);
+// public static native boolean ensureMethodDeoptimized(Method method);
 
 static jboolean Artemis_ensureMethodDeoptimized(JNIEnv* env, jclass, jobject java_method) {
   ArtMethod* method;
@@ -70,8 +70,8 @@ static jboolean Artemis_ensureMethodDeoptimized(JNIEnv* env, jclass, jobject jav
 
 // public static native boolean ensureDeoptimized();
 
-static void Artemis_ensureDeoptimized(JNIEnv* env, jclass) {
-  artemis::EnsureDeoptimized(ThreadForEnv(env));
+static jboolean Artemis_ensureDeoptimized(JNIEnv* env, jclass) {
+  return artemis::EnsureDeoptimized(ThreadForEnv(env));
 }
 
 static JNINativeMethod gMethods[] = {
@@ -81,7 +81,7 @@ static JNINativeMethod gMethods[] = {
   NATIVE_METHOD(Artemis, isMethodJitCompiled, "(Ljava/lang/reflect/Method;)Z"),
   NATIVE_METHOD(Artemis, ensureJitCompiled, "()Z"),
   NATIVE_METHOD(Artemis, ensureMethodJitCompiled, "(Ljava/lang/reflect/Method;)Z"),
-  NATIVE_METHOD(Artemis, ensureDeoptimized, "()V"),
+  NATIVE_METHOD(Artemis, ensureDeoptimized, "()Z"),
   NATIVE_METHOD(Artemis, ensureMethodDeoptimized, "(Ljava/lang/reflect/Method;)Z"),
 };
 
