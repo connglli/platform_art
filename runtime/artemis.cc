@@ -198,11 +198,12 @@ bool EnsureJitCompiled(Thread* self) REQUIRES(!Locks::mutator_lock_) {
     usleep(500);
     ScopedObjectAccess soa(self);
     // The branch will automatically invoke MaybeDoOnStackReplacement() to OSR.
-    // BUG(congli): It seems MaybeDoOnStackReplacement() is never executed but
-    // IsBeingInterpretedAt(self, 1) returns false. Looks like somewhere else
-    // invokes PrepareForOsr()... But I did not find anywhere except nterp.
+    // It seems MaybeDoOnStackReplacement() is never executed but
+    // IsBeingInterpretedAt(self, 1) returns false. This happens when nterp-impl
+    // interpreter is enabled instead of the switch-impl. And the on stack
+    // replacement is done directly by nterp instead of MaybeDoOnStackReplacement().
     jit->CompileMethod(method, self, CompilationKind::kOsr, /*prejit=*/ false);
-    if (code_cache->LookupOsrMethodHeader(method) != nullptr) {
+    if (code_cache->IsOsrCompiled(method)) {
       break;
     }
   } while (true);
