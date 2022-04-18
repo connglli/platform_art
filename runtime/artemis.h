@@ -1,8 +1,8 @@
 #ifndef ART_RUNTIME_ARTEMIS_H_
 #define ART_RUNTIME_ARTEMIS_H_
 
-#include "thread.h"
 #include "art_method.h"
+#include "thread.h"
 
 namespace art {
 namespace artemis {

@@ -299,8 +299,6 @@ bool EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_) {
     // enters HandleDeoptimization() and EnterInterpreterFromDeoptimization().
     // EnterInterpreterFromDeoptimization() will continue the execution from
     // the transformed shadow frame.
-    // BUG(congli): HandleOptimizingDeoptimization() cannot fetch the correct
-    // local variables and parameter values.
     ScopedObjectAccess soa(self);
     artDeoptimizeFromCompiledCode(DeoptimizationKind::kArtemis, self);
     LOG(FATAL) << "UNREACHABLE";  // Expected to take long jump.

@@ -1179,13 +1179,16 @@ ScopedArenaVector<uint8_t> CodeGenerator::BuildStackMaps(const dex::CodeItem* co
 //  * Method local catch blocks
 //    a catch block must see the environment of the instruction from the same method that can
 //    throw to this block.
+//  * Artemis specific JIT/DEOPT methods to force stack replacement. Note, this method should
+//    often keep synchronized with ShouldBeLiveForEnvironment() in ssa_liveness_analysis.h.
 static bool NeedsVregInfo(HInstruction* instruction, bool osr) {
   HGraph* graph = instruction->GetBlock()->GetGraph();
   return instruction->IsDeoptimize() ||
          graph->IsDebuggable() ||
          graph->HasMonitorOperations() ||
          osr ||
-         instruction->CanThrowIntoCatchBlock();
+         instruction->CanThrowIntoCatchBlock() ||
+         instruction->IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke();
 }
 
 void CodeGenerator::RecordPcInfo(HInstruction* instruction,

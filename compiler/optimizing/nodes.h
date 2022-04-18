@@ -22,6 +22,7 @@
 #include <type_traits>
 
 #include "art_method.h"
+#include "artemis.h"
 #include "base/arena_allocator.h"
 #include "base/arena_bit_vector.h"
 #include "base/arena_containers.h"
@@ -2520,6 +2521,10 @@ class HInstruction : public ArenaObject<kArenaAllocInstruction> {
 
   FOR_EACH_INSTRUCTION(INSTRUCTION_TYPE_CAST)
 #undef INSTRUCTION_TYPE_CAST
+
+  // Return whether the instruction is a static invoke of
+  // Artemis#ensureDeoptimized() or Artemis#ensureJitCompiled()
+  bool IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke();
 
   // Return a clone of the instruction if it is clonable (shallow copy by default, custom copy
   // if a custom copy-constructor is provided for a particular type). If IsClonable() is false for
@@ -8615,6 +8620,14 @@ inline bool IsZeroBitPattern(HInstruction* instruction) {
   FOR_EACH_INSTRUCTION(INSTRUCTION_TYPE_CAST)
 #undef INSTRUCTION_TYPE_CAST
 
+inline bool HInstruction::IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke() {
+  if (!IsInvokeStaticOrDirect()) {
+    return false;
+  }
+  ArtMethod* method = AsInvokeStaticOrDirect()->GetResolvedMethod();
+  return artemis::IsArtemisEnsureJitCompiled(method) ||
+         artemis::IsArtemisEnsureDeoptimized(method);
+}
 
 // Create space in `blocks` for adding `number_of_new_blocks` entries
 // starting at location `at`. Blocks after `at` are moved accordingly.

@@ -1289,7 +1289,12 @@ class SsaLivenessAnalysis : public ValueObject {
     // from the interpreter via SuspendCheck; thus we need to preserve the environment.
     if (env_holder->IsSuspendCheck() && graph->IsCompilingOsr()) return true;
     if (graph -> IsDeadReferenceSafe()) return false;
-    return instruction->GetType() == DataType::Type::kReference;
+    return instruction->GetType() == DataType::Type::kReference ||
+           // When invoking Artemis' specifc ensureXxx() methods, should keep the
+           // environment since we need them to force self JIT/DEOPT (i.e., OSR).
+           // Always put this line of code as the last condition to decrease the
+           // performance degradation induced by Artemis.
+           env_holder->IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke();
   }
 
   void CheckNoLiveInIrreducibleLoop(const HBasicBlock& block) const {
