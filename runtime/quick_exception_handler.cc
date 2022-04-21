@@ -621,7 +621,12 @@ void QuickExceptionHandler::DeoptimizeSingleFrame(DeoptimizationKind kind) {
   // When deoptimizing for debug support the optimized code is still valid and
   // can be reused when debugging support (like breakpoints) are no longer
   // needed fot this method.
-  if (Runtime::Current()->UseJitCompilation() && (kind != DeoptimizationKind::kDebugging)) {
+  if (Runtime::Current()->UseJitCompilation() && (kind != DeoptimizationKind::kDebugging) &&
+      // In artemis, when deoptimize, we directly deoptimize it such that the
+      // method entry is changed to the interpreter, instead of kicking it out
+      // from the OSR cache while is still JITted.
+      // TODO(congli): Do we need to reset the method counter?
+      (kind != DeoptimizationKind::kArtemis)) {
     Runtime::Current()->GetJit()->GetCodeCache()->InvalidateCompiledCodeFor(
         deopt_method, visitor.GetSingleFrameDeoptQuickMethodHeader());
   } else {

@@ -72,7 +72,10 @@ extern "C" NO_RETURN void artDeoptimizeFromCompiledCode(DeoptimizationKind kind,
   self->PushDeoptimizationContext(return_value,
                                   /* is_reference= */ false,
                                   self->GetException(),
-                                  /* from_code= */ true,
+                                  // If from_code is set to true, then the dex bytecode
+                                  // causing deoptimization is re-executed when back to
+                                  // the interpreter. See EnterInterpreterFromDeoptimize().
+                                  /* from_code= */ kind != DeoptimizationKind::kArtemis,
                                   DeoptimizationMethodType::kDefault);
   artDeoptimizeImpl(self, kind, true);
 }
