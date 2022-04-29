@@ -123,8 +123,8 @@ bool EnsureClassInitialized(Thread* self, ArtMethod* method) {
 
 bool ForceJitCompileMethod(Thread* self,
                            ArtMethod* method) REQUIRES(!Locks::mutator_lock_) {
-  // Do not support native methods
-  if (!IsJitEnabled() || method->IsNative()) {
+  // Do not support native and abstract methods
+  if (!IsJitEnabled() || method->IsNative() || !method->IsInvokable()) {
     return false;
   }
 
