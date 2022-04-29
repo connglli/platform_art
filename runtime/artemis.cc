@@ -213,8 +213,8 @@ bool EnsureJitCompiled(Thread* self) REQUIRES(!Locks::mutator_lock_) {
 
 bool ForceDeoptimizeMethod(Thread* self,
                            ArtMethod* method) REQUIRES(!Locks::mutator_lock_) {
-  // Do not support native methods
-  if (method->IsNative()) {
+  // Do not support native and abstract methods
+  if (method->IsNative() || !method->IsInvokable()) {
     return false;
   }
 
