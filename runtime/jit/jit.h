@@ -55,6 +55,7 @@ class String;
 namespace jit {
 
 class JitCodeCache;
+class JitCompileTask;
 class JitMemoryRegion;
 class JitOptions;
 
@@ -480,6 +481,17 @@ class Jit {
 
   static bool BindCompilerMethods(std::string* error_msg);
 
+  void AddCompileTask(Thread* self,
+                      ArtMethod* method,
+                      CompilationKind compilation_kind,
+                      bool precompile = false);
+
+  bool CompileMethodInternal(ArtMethod* method,
+                             Thread* self,
+                             CompilationKind compilation_kind,
+                             bool prejit)
+      REQUIRES_SHARED(Locks::mutator_lock_);
+
   // JIT compiler
   static void* jit_library_handle_;
   static JitCompilerInterface* jit_compiler_;
@@ -531,6 +543,8 @@ class Jit {
   // std::list<std::string> artemis_traced_methods_ GUARDED_BY(artemis_lock_);
   std::set<std::string> artemis_jit_compiled_methods_ GUARDED_BY(artemis_lock_);
   std::set<std::string> artemis_deoptimized_methods_ GUARDED_BY(artemis_lock_);
+
+  friend class art::jit::JitCompileTask;
 
   DISALLOW_COPY_AND_ASSIGN(Jit);
 };
