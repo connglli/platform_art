@@ -59,7 +59,7 @@ bool IsBeingInterpretedAt(Thread* self, int depth) {
   return is_shadow_frame || is_nterp_frame;
 }
 
-bool IsMethodBeingManaged(Thread* self, ArtMethod* goal) {
+bool IsMethodBeingManagedOnStack(Thread* self, ArtMethod* goal) {
   ScopedObjectAccess soa(self);
   bool found_goal = false;
   StackVisitor::WalkStack(
@@ -142,7 +142,7 @@ bool ForceJitCompileMethod(Thread* self,
   // The method is being managed on the stack which requires
   // an OSR compilation. Do not support OSR in this method.
   // Use art::artemis::EnsureJitCompiled() instead.
-  if (IsMethodBeingManaged(self, method)) {
+  if (IsMethodBeingManagedOnStack(self, method)) {
     return false;
   }
 
@@ -172,7 +172,8 @@ bool IsArtemisEnsureJitCompiled(ArtMethod* method) {
 bool EnsureJitCompiled(Thread* self) REQUIRES(!Locks::mutator_lock_) {
   // Note, use 1 instead of 0 because the stack top is the
   // native JNI method and we are caller of that method
-  ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ 1);
+  const int method_stack_index = 1;
+  ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ method_stack_index);
 
   // Do not support native methods
   if (!IsJitEnabled() || method->IsNative()) {
@@ -227,7 +228,7 @@ bool ForceDeoptimizeMethod(Thread* self,
   // a stack transformation (quick to shadow). Do not support
   // this in this method. Use art::artemis::EnsureDeoptimized().
   // We never support deoptimize one of our caller.
-  if (IsMethodBeingManaged(self, method)) {
+  if (IsMethodBeingManagedOnStack(self, method)) {
     return false;
   }
 
@@ -281,15 +282,16 @@ extern "C" NO_RETURN void artDeoptimizeFromCompiledCode(DeoptimizationKind kind,
 bool EnsureDeoptimized(Thread* self) REQUIRES(!Locks::mutator_lock_) {
   // Note, use 1 instead of 0 because the stack top is the
   // native JNI method and we are caller of that method
-  ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ 1);
+  const int method_stack_index = 1;
+  ArtMethod* method = GetCurrentMethodAt(self, /*depth=*/ method_stack_index);
 
   // Do not support native methods
   if (method->IsNative()) {
     return false;
   }
 
-  // Not JIT compiled, no need deoptimizing
-  if (!IsMethodJitCompiled(method)) {
+  // Being interpreted, no need deoptimizing
+  if (IsBeingInterpretedAt(self, /*depth=*/ method_stack_index)) {
     return true;
   }
 
