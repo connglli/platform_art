@@ -29,7 +29,7 @@ cc_library {
     defaults: ["art_defaults"],
     host_supported: true,
     srcs: [
-        "service/native/service.cc",
+        "native/service.cc",
     ],
     export_include_dirs: ["."],
     apex_available: [
@@ -68,26 +68,8 @@ java_sdk_library {
         "com.android.art",
         "com.android.art.debug",
     ],
-    sdk_version: "core_platform",
+    sdk_version: "system_server_current",
     min_sdk_version: "31",
-
-    public: {
-        // Override the setting of "module_current" from the defaults as that is
-        // not available in all manifests where this needs to be built.
-        sdk_version: "core_current",
-    },
-
-    system_server: {
-        // Override the setting of "module_current" from the defaults as that is
-        // not available in all manifests where this needs to be built.
-        sdk_version: "core_current",
-    },
-
-    // The API elements are the ones annotated with
-    //   libcore.api.CorePlatformApi(status=libcore.api.CorePlatformApi.Status.STABLE)
-    droiddoc_options: [
-        "--show-single-annotation libcore.api.CorePlatformApi\\(status=libcore.api.CorePlatformApi.Status.STABLE\\)",
-    ],
 
     // Temporarily disable compatibility with previous released APIs.
     // TODO - remove once prototype has stabilized
@@ -100,11 +82,10 @@ java_sdk_library {
     compile_dex: true,
 
     srcs: [
-        "service/java/com/android/server/art/ArtManagerLocal.java",
+        "java/**/*.java",
     ],
 
     libs: [
-        "art.module.api.annotations.for.system.modules",
     ],
 
     plugins: ["java_api_finder"],
@@ -114,7 +95,7 @@ java_sdk_library {
 art_cc_defaults {
     name: "art_libartservice_tests_defaults",
     srcs: [
-        "service/native/service_test.cc",
+        "native/service_test.cc",
     ],
     shared_libs: [
         "libbase",
@@ -140,4 +121,26 @@ art_cc_test {
         "art_standalone_gtest_defaults",
         "art_libartservice_tests_defaults",
     ],
+}
+
+android_test {
+    name: "ArtServiceTests",
+
+    // Include all test java files.
+    srcs: [
+        "javatests/**/*.java",
+    ],
+
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.ext.truth",
+        "androidx.test.runner",
+        "mockito-target-minus-junit4",
+        "service-art.impl",
+    ],
+
+    sdk_version: "system_server_current",
+    min_sdk_version: "31",
+
+    test_suites: ["general-tests"],
 }

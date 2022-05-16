@@ -50,9 +50,14 @@
           "org.apache.harmony.luni.tests.internal.net.www.protocol.https.HttpsURLConnectionTest#testConsequentProxyConnection",
           "org.apache.harmony.tests.java.lang.ref.ReferenceQueueTest#test_removeJ",
           "org.apache.harmony.tests.java.lang.ProcessManagerTest#testSleep",
-          "org.apache.harmony.tests.java.math.BigIntegerConstructorsTest#testConstructorPrime",
           "org.apache.harmony.tests.java.util.TimerTest#testOverdueTaskExecutesImmediately",
-          "org.apache.harmony.tests.java.util.WeakHashMapTest#test_keySet_hasNext"
+          "org.apache.harmony.tests.java.util.WeakHashMapTest#test_keySet_hasNext",
+          "test.java.lang.StrictMath.HypotTests_testAgainstTranslit_shard1",
+          "test.java.lang.StrictMath.HypotTests_testAgainstTranslit_shard2",
+          "test.java.lang.StrictMath.HypotTests_testAgainstTranslit_shard3",
+          "test.java.lang.StrictMath.HypotTests_testAgainstTranslit_shard4",
+          "test.java.math.BigDecimal",
+          "test.java.math.BigInteger_testConstructor"
   ]
 },
 {
@@ -63,5 +68,13 @@
   names: ["libcore.java.lang.ThreadTest#nativeThreadNames",
           "jsr166.ThreadLocalTest#testGenericITL"
   ]
+},
+{
+  description: "Time-sensitive test fails check of elapsed time with gcstress",
+  result: EXEC_FAILED,
+  bug: 205007075,
+  names: ["jsr166.CompletableFutureTest#testCompleteOnTimeout_completed",
+          "jsr166.CompletableFutureTest#testDelayedExecutor"
+         ]
 }
 ]
