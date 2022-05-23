@@ -1294,7 +1294,7 @@ class SsaLivenessAnalysis : public ValueObject {
            // environment since we need them to force self JIT/DEOPT (i.e., OSR).
            // Always put this line of code as the last condition to decrease the
            // performance degradation induced by Artemis.
-           env_holder->IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke();
+           env_holder->IsInvokeStaticArtemisEnsureJitCompiledOrDeoptimized();
   }
 
   void CheckNoLiveInIrreducibleLoop(const HBasicBlock& block) const {

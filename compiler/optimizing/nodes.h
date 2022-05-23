@@ -2524,7 +2524,7 @@ class HInstruction : public ArenaObject<kArenaAllocInstruction> {
 
   // Return whether the instruction is a static invoke of
   // Artemis#ensureDeoptimized() or Artemis#ensureJitCompiled()
-  bool IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke();
+  bool IsInvokeStaticArtemisEnsureJitCompiledOrDeoptimized();
 
   // Return a clone of the instruction if it is clonable (shallow copy by default, custom copy
   // if a custom copy-constructor is provided for a particular type). If IsClonable() is false for
@@ -8620,7 +8620,7 @@ inline bool IsZeroBitPattern(HInstruction* instruction) {
   FOR_EACH_INSTRUCTION(INSTRUCTION_TYPE_CAST)
 #undef INSTRUCTION_TYPE_CAST
 
-inline bool HInstruction::IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke() {
+inline bool HInstruction::IsInvokeStaticArtemisEnsureJitCompiledOrDeoptimized() {
   if (!IsInvokeStaticOrDirect()) {
     return false;
   }

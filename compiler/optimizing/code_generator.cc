@@ -1188,7 +1188,7 @@ static bool NeedsVregInfo(HInstruction* instruction, bool osr) {
          graph->HasMonitorOperations() ||
          osr ||
          instruction->CanThrowIntoCatchBlock() ||
-         instruction->IsArtemisEnsureJitCompiledOrDeoptimizedStaticInvoke();
+         instruction->IsInvokeStaticArtemisEnsureJitCompiledOrDeoptimized();
 }
 
 void CodeGenerator::RecordPcInfo(HInstruction* instruction,
